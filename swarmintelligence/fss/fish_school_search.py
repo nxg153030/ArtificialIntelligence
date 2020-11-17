@@ -6,6 +6,7 @@ upper_limit = 5.12
 lower_limit = 2.5
 global_optimum = 0.0
 step_ind_init = 0.01
+step_ind_final = 0.0001
 step_ind = step_ind_init
 step_vol = 2 * step_ind
 random.seed(10)
@@ -14,8 +15,7 @@ random.seed(10)
 class Fish:
     def __init__(self, _id, dimensions):
         self.id = _id
-        self.position_vec = [random.uniform(lower_limit, upper_limit) for _ in
-                             range(dimensions)]  # D-dimensional vector
+        self.position_vec = np.array([random.uniform(lower_limit, upper_limit) for _ in range(dimensions)])
         self.fitness = np.inf
         self.delta_fitness = 0.0
         self.displacement = 0.0
@@ -39,7 +39,6 @@ class FishSchoolSearch:
         self.num_fish = num_fish
         self.dimensions = dimensions
         self.fish_school = [None] * self.num_fish
-        self.barycenter = [0.0] * self.dimensions
         self.fitness_func = fitness_func
         self.num_iter = num_iter
         self.fish_school_weight = 0.0
@@ -47,22 +46,17 @@ class FishSchoolSearch:
         self.delta_position_all = [0.0] * self.num_fish
         self.max_delta_fitness = -np.inf
         self.populate_fish_school()
+        self.barycenter = np.array([0.0] * self.dimensions)
 
     def populate_fish_school(self):
         for i in range(self.num_fish):
             self.fish_school[i] = Fish(i, self.dimensions)
             self.fish_school_weight += self.fish_school[i].weight
 
-    @property
-    def barycenter(self):
-        return self.barycenter
-
-    @barycenter.setter
-    def barycenter(self, fish_weights_sum):
-        # barycenter is a vector
-        for dim in range(self.dimensions):
-            self.barycenter[dim] = sum(
-                fish.position_vec[i] * fish.weight for i, fish in enumerate(self.fish_school)) / fish_weights_sum
+    def set_barycenter(self, fish_weights_sum):
+        weighted_positions = np.array([fish.position_vec * fish.weight for fish in self.fish_school])
+        weighted_position_sum = weighted_positions.sum(axis=0)
+        self.barycenter = np.true_divide(weighted_position_sum, fish_weights_sum)
 
     def instinctive_movement(self):
         resulting_direction = sum([delta_pos * delta_fitness for delta_pos, delta_fitness in
@@ -72,20 +66,25 @@ class FishSchoolSearch:
 
     def volitive_movement(self):
         fish_weights_current = sum(fish.weight for fish in self.fish_school)
-        self.barycenter(fish_weights_current)
+        self.set_barycenter(fish_weights_current)
         for fish in self.fish_school:
             if fish_weights_current > self.fish_school_weight:
                 fish.position_vec = fish.position_vec - (((step_vol * random.uniform(0, 1)) *
-                                                          (fish.position_vec - self.barycenter)) / np.linalg.norm(
-                    fish.position_vec, self.barycenter))
+                                                          np.subtract(fish.position_vec, self.barycenter)) /
+                                                         np.linalg.norm(fish.position_vec - self.barycenter))
             else:
                 fish.position_vec = fish.position_vec + (((step_vol * random.uniform(0, 1)) *
-                                                          (fish.position_vec - self.barycenter)) / np.linalg.norm(
-                    fish.position_vec, self.barycenter))
+                                                          np.subtract(fish.position_vec, self.barycenter)) /
+                                                         np.linalg.norm(fish.position_vec - self.barycenter))
         self.fish_school_weight = fish_weights_current
 
     def stopping_condition_met(self, num_iter, fitness):
-        return num_iter < self.num_iter or fitness < global_optimum
+        return num_iter >= self.num_iter or fitness <= global_optimum
+
+    def log_individual_fitness(self, iter_counter):
+        print(f'Iteration: {iter_counter}')
+        for fish in self.fish_school:
+            print(f'Fish ID: {fish.id}, Fitness: {fish.fitness}')
 
     def run(self):
         """
@@ -97,26 +96,25 @@ class FishSchoolSearch:
                 feeding - done (weight update)
                 evaluate fitness function
 
-            for each fish: - TODO
+            for each fish:
                 perform instinctive movement
 
-            calculate barycenter - TODO
+            calculate barycenter
 
-            for each fish: - TODO
+            for each fish:
                 perform volitive movement
-
             update step
+
+        TODO:
         """
         iter_counter = 0
         fitness = 1000
-
-        max_delta_fitness = 0
+        global step_ind, step_vol, step_ind_final
         while not self.stopping_condition_met(iter_counter, fitness):
             for idx, fish in enumerate(self.fish_school):
                 current_fitness = self.fitness_func(fish.position_vec, self.dimensions)
                 # individual movement
-                new_candidate_pos = [fish.position_vec[i] + (random.uniform(-1, 1) * step_ind) for i in
-                                     range(self.dimensions)]  # eq 1
+                new_candidate_pos = fish.position_vec + (random.uniform(-1, 1) * step_ind)  # eq 1
                 new_fitness = self.fitness_func(new_candidate_pos, self.dimensions)  # eq 2
                 delta_fitness = new_fitness - current_fitness
                 if delta_fitness < 0:
@@ -139,12 +137,19 @@ class FishSchoolSearch:
             self.instinctive_movement()
             self.volitive_movement()
 
+            self.log_individual_fitness(iter_counter)
             # step update
-            step_ind = step_ind - (step_ind_init - step_ind) / self.num_iter  # eq 4, don't think this is correct
+            step_ind = step_ind - (step_ind_init - step_ind_final) / self.num_iter
+            iter_counter += 1
 
 
 def main():
-    pass
+    num_fish = 10
+    dimensions = 2
+    fitness_func = rastrigin
+    num_iter = 50
+    fss = FishSchoolSearch(num_fish, dimensions, fitness_func, num_iter)
+    fss.run()
 
 
 if __name__ == '__main__':

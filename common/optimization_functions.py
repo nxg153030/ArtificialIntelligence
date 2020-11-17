@@ -9,4 +9,4 @@ def rastrigin(x, n):
     Global minimum: 0
     """
     A = 10
-    return (A * n) + sum(x_i ** 2 - A * cos(2 * pi * x_i) for x_i in x)
+    return round((A * n) + sum(x_i ** 2 - A * cos(2 * pi * x_i) for x_i in x), 4)

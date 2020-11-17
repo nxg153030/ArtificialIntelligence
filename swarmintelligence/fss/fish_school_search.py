@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import copy
 from common.optimization_functions import rastrigin
 
 upper_limit = 5.12
@@ -13,10 +14,10 @@ random.seed(10)
 
 
 class Fish:
-    def __init__(self, _id, dimensions):
+    def __init__(self, _id, dimensions, fitness_func):
         self.id = _id
         self.position_vec = np.array([random.uniform(lower_limit, upper_limit) for _ in range(dimensions)])
-        self.fitness = np.inf
+        self.fitness = fitness_func(self.position_vec, dimensions)
         self.delta_fitness = 0.0
         self.displacement = 0.0
         self.weight = 1.0
@@ -43,14 +44,14 @@ class FishSchoolSearch:
         self.num_iter = num_iter
         self.fish_school_weight = 0.0
         self.delta_fitness_all = [0.0] * self.num_fish
-        self.delta_position_all = [0.0] * self.num_fish
+        self.delta_position_all = [0.0] * self.num_fish # this is wrong
         self.max_delta_fitness = -np.inf
         self.populate_fish_school()
         self.barycenter = np.array([0.0] * self.dimensions)
 
     def populate_fish_school(self):
         for i in range(self.num_fish):
-            self.fish_school[i] = Fish(i, self.dimensions)
+            self.fish_school[i] = Fish(i, self.dimensions, self.fitness_func)
             self.fish_school_weight += self.fish_school[i].weight
 
     def set_barycenter(self, fish_weights_sum):
@@ -59,8 +60,10 @@ class FishSchoolSearch:
         self.barycenter = np.true_divide(weighted_position_sum, fish_weights_sum)
 
     def instinctive_movement(self):
-        resulting_direction = sum([delta_pos * delta_fitness for delta_pos, delta_fitness in
-                                   zip(self.delta_position_all, self.delta_fitness_all)])
+        weighted_displacements = np.array([fish.displacement * fish.delta_fitness for fish in self.fish_school])
+        weighted_displacement_sum = weighted_displacements.sum(axis=0)
+        delta_fitness_sum = sum(fish.delta_fitness for fish in self.fish_school)
+        resulting_direction = np.true_divide(weighted_displacement_sum, delta_fitness_sum)
         for fish in self.fish_school:
             fish.position_vec = fish.position_vec + resulting_direction
 
@@ -83,8 +86,11 @@ class FishSchoolSearch:
 
     def log_individual_fitness(self, iter_counter):
         print(f'Iteration: {iter_counter}')
+        fish_with_best_fitness = min(self.fish_school, key=lambda x: x.fitness)
+        print(f'Fish with best fitness: ID: {fish_with_best_fitness.id}, fitness: {fish_with_best_fitness.fitness}')
         for fish in self.fish_school:
-            print(f'Fish ID: {fish.id}, Fitness: {fish.fitness}')
+            rounded_position_vec = [round(fish.position_vec[i], 4) for i in range(self.dimensions)]
+            print(f'Fish ID: {fish.id}, Position: {rounded_position_vec}, Fitness: {fish.fitness}')
 
     def run(self):
         """
@@ -104,8 +110,6 @@ class FishSchoolSearch:
             for each fish:
                 perform volitive movement
             update step
-
-        TODO:
         """
         iter_counter = 0
         fitness = 1000
@@ -114,15 +118,16 @@ class FishSchoolSearch:
             for idx, fish in enumerate(self.fish_school):
                 current_fitness = self.fitness_func(fish.position_vec, self.dimensions)
                 # individual movement
-                new_candidate_pos = fish.position_vec + (random.uniform(-1, 1) * step_ind)  # eq 1
+                new_candidate_pos = copy.deepcopy(fish.position_vec) + (random.uniform(-1, 1) * step_ind)  # eq 1
                 new_fitness = self.fitness_func(new_candidate_pos, self.dimensions)  # eq 2
                 delta_fitness = new_fitness - current_fitness
                 if delta_fitness < 0:
+                    fish.displacement = new_candidate_pos - fish.position_vec
                     fish.position_vec = new_candidate_pos
+                    fish.fitness = new_fitness
                 else:
                     delta_fitness = 0  # if curr_fitness is worse, then don't move
 
-                fish.fitness = new_fitness  # update the fitness for fish every iteration, even if it is 0
                 fish.delta_fitness = abs(delta_fitness)
                 self.delta_fitness_all[idx] = delta_fitness
                 # update max_delta_fitness

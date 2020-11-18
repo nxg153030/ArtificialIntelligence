@@ -44,7 +44,6 @@ class FishSchoolSearch:
         self.num_iter = num_iter
         self.fish_school_weight = 0.0
         self.delta_fitness_all = [0.0] * self.num_fish
-        self.delta_position_all = [0.0] * self.num_fish # this is wrong
         self.max_delta_fitness = -np.inf
         self.populate_fish_school()
         self.barycenter = np.array([0.0] * self.dimensions)
@@ -122,11 +121,12 @@ class FishSchoolSearch:
                 new_fitness = self.fitness_func(new_candidate_pos, self.dimensions)  # eq 2
                 delta_fitness = new_fitness - current_fitness
                 if delta_fitness < 0:
-                    fish.displacement = new_candidate_pos - fish.position_vec
+                    fish.displacement = new_candidate_pos - copy.deepcopy(fish.position_vec)
                     fish.position_vec = new_candidate_pos
                     fish.fitness = new_fitness
                 else:
-                    delta_fitness = 0  # if curr_fitness is worse, then don't move
+                    delta_fitness = 0.0  # if curr_fitness is worse, then don't move
+                    fish.displacement = 0.0
 
                 fish.delta_fitness = abs(delta_fitness)
                 self.delta_fitness_all[idx] = delta_fitness

@@ -67,10 +67,10 @@ class FishSchoolSearch:
             fish.position_vec = fish.position_vec + resulting_direction
 
     def volitive_movement(self):
-        fish_weights_current = sum(fish.weight for fish in self.fish_school)
-        self.set_barycenter(fish_weights_current)
+        fish_school_weight_current = sum(fish.weight for fish in self.fish_school)
+        self.set_barycenter(fish_school_weight_current)
         for fish in self.fish_school:
-            if fish_weights_current > self.fish_school_weight:
+            if fish_school_weight_current > self.fish_school_weight:
                 fish.position_vec = fish.position_vec - (((step_vol * random.uniform(0, 1)) *
                                                           np.subtract(fish.position_vec, self.barycenter)) /
                                                          np.linalg.norm(fish.position_vec - self.barycenter))
@@ -78,10 +78,11 @@ class FishSchoolSearch:
                 fish.position_vec = fish.position_vec + (((step_vol * random.uniform(0, 1)) *
                                                           np.subtract(fish.position_vec, self.barycenter)) /
                                                          np.linalg.norm(fish.position_vec - self.barycenter))
-        self.fish_school_weight = fish_weights_current
+        self.fish_school_weight = fish_school_weight_current
 
-    def stopping_condition_met(self, num_iter, fitness):
-        return num_iter >= self.num_iter or fitness <= global_optimum
+    def stopping_condition_met(self, num_iter):
+        fish_with_best_fitness = min(self.fish_school, key=lambda x: x.fitness)
+        return num_iter >= self.num_iter or fish_with_best_fitness.fitness <= global_optimum
 
     def log_individual_fitness(self, iter_counter):
         print(f'Iteration: {iter_counter}')
@@ -111,9 +112,8 @@ class FishSchoolSearch:
             update step
         """
         iter_counter = 0
-        fitness = 1000
         global step_ind, step_vol, step_ind_final
-        while not self.stopping_condition_met(iter_counter, fitness):
+        while not self.stopping_condition_met(iter_counter):
             for idx, fish in enumerate(self.fish_school):
                 current_fitness = self.fitness_func(fish.position_vec, self.dimensions)
                 # individual movement
@@ -145,6 +145,7 @@ class FishSchoolSearch:
             self.log_individual_fitness(iter_counter)
             # step update
             step_ind = step_ind - (step_ind_init - step_ind_final) / self.num_iter
+            step_vol = 2 * step_ind
             iter_counter += 1
 
 
@@ -152,7 +153,7 @@ def main():
     num_fish = 10
     dimensions = 2
     fitness_func = rastrigin
-    num_iter = 50
+    num_iter = 1000
     fss = FishSchoolSearch(num_fish, dimensions, fitness_func, num_iter)
     fss.run()
 

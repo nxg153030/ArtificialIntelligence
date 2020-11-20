@@ -1,13 +1,13 @@
 import random
 import numpy as np
 import copy
-from common.optimization_functions import rastrigin
+from common.optimization_functions import rastrigin, sphere
 
 upper_limit = 5.12
 lower_limit = 2.5
 global_optimum = 0.0
-step_ind_init = 0.01
-step_ind_final = 0.0001
+step_ind_init = 0.1
+step_ind_final = 0.01
 step_ind = step_ind_init
 step_vol = 2 * step_ind
 random.seed(10)
@@ -136,8 +136,7 @@ class FishSchoolSearch:
 
             # weight update for all fish
             for fish in self.fish_school:
-                fish.weight = fish.weight + (
-                        fish.delta_fitness / self.max_delta_fitness)
+                fish.weight = fish.weight + (fish.delta_fitness / self.max_delta_fitness)
 
             self.instinctive_movement()
             self.volitive_movement()
@@ -152,8 +151,8 @@ class FishSchoolSearch:
 def main():
     num_fish = 10
     dimensions = 2
-    fitness_func = rastrigin
-    num_iter = 1000
+    fitness_func = sphere
+    num_iter = 100
     fss = FishSchoolSearch(num_fish, dimensions, fitness_func, num_iter)
     fss.run()
 

@@ -62,7 +62,10 @@ class FishSchoolSearch:
         weighted_displacements = np.array([fish.displacement * fish.delta_fitness for fish in self.fish_school])
         weighted_displacement_sum = weighted_displacements.sum(axis=0)
         delta_fitness_sum = sum(fish.delta_fitness for fish in self.fish_school)
-        resulting_direction = np.true_divide(weighted_displacement_sum, delta_fitness_sum)
+        if delta_fitness_sum != 0.0:
+            resulting_direction = np.true_divide(weighted_displacement_sum, delta_fitness_sum)
+        else:
+            resulting_direction = np.array([0.0] * self.dimensions)
         for fish in self.fish_school:
             fish.position_vec = fish.position_vec + resulting_direction
 
@@ -87,10 +90,10 @@ class FishSchoolSearch:
     def log_individual_fitness(self, iter_counter):
         print(f'Iteration: {iter_counter}')
         fish_with_best_fitness = min(self.fish_school, key=lambda x: x.fitness)
-        print(f'Fish with best fitness: ID: {fish_with_best_fitness.id}, fitness: {fish_with_best_fitness.fitness}')
+        print(f'Fish with best fitness: ID: {fish_with_best_fitness.id}, fitness: {round(fish_with_best_fitness.fitness, 4)}')
         for fish in self.fish_school:
-            rounded_position_vec = [round(fish.position_vec[i], 4) for i in range(self.dimensions)]
-            print(f'Fish ID: {fish.id}, Position: {rounded_position_vec}, Fitness: {fish.fitness}')
+            rounded_position_vec = np.array([round(fish.position_vec[i], 4) for i in range(self.dimensions)])
+            print(f'Fish ID: {fish.id}, Position: {rounded_position_vec}, Fitness: {round(fish.fitness, 4)}')
 
     def run(self):
         """
@@ -118,6 +121,7 @@ class FishSchoolSearch:
                 current_fitness = self.fitness_func(fish.position_vec, self.dimensions)
                 # individual movement
                 new_candidate_pos = copy.deepcopy(fish.position_vec) + (random.uniform(-1, 1) * step_ind)  # eq 1
+                # new_candidate_pos = np.array([round(new_candidate_pos[i], 4) for i in range(self.dimensions)])
                 new_fitness = self.fitness_func(new_candidate_pos, self.dimensions)  # eq 2
                 delta_fitness = new_fitness - current_fitness
                 if delta_fitness < 0:
@@ -141,9 +145,13 @@ class FishSchoolSearch:
             self.instinctive_movement()
             self.volitive_movement()
 
+            # # round the position vectors to 4 decimal places
+            # for fish in self.fish_school:
+            #     fish.position_vec = np.array([round(fish.position_vec[i], 4) for i in range(self.dimensions)])
+
             self.log_individual_fitness(iter_counter)
             # step update
-            step_ind = step_ind - (step_ind_init - step_ind_final) / self.num_iter
+            step_ind = round(step_ind - ((step_ind_init - step_ind_final) / self.num_iter), 4)
             step_vol = 2 * step_ind
             iter_counter += 1
 

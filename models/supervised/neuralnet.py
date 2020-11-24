@@ -1,44 +1,68 @@
 import numpy as np
-from common.activation_functions import *
+from common.activation_functions import sigmoid, sigmoid_prime
+
+# XOR dataset for testing
+X = [(0, 0, -1), (0, 1, -1), (1, 0, -1), (1, 1, -1)]
+Y = [0, 1, 1, 1]
 
 
-class NeuralNet:
-    def __init__(self, layers=[], learning_rate=0.1):
-        self.data = []
-        self.weights = []
+class LinearPerceptron:
+    def __init__(self, dimensions, X_train, Y_train, layers=None, learning_rate=0.5, epochs=10):
+        """
+        :param dimensions: This should be equal to the number of columns for each training sample
+        :param layers:
+        :param learning_rate:
+        """
+        self.train_data = np.array(X_train)
+        self.targets = np.array(Y_train)
+        self.weights = np.zeros(dimensions)
         self.layers = layers
         self.alpha = learning_rate
+        self.epochs = epochs
 
     def __repr__(self):
         pass
 
-    def initialize_weights(self):
-        for i in np.arange(0, len(self.layers) - 2):
-            w = np.random.randn(self.layers[i] + 1, self.layers[i + 1] + 1)  # +1 for the bias term
-            # scale w by dividing the square root of the no. of nodes in the current layer,
-            # normalizing the variance of each neuron's output
-            self.weights.append(w / np.sqrt(self.layers[i]))
+    def forward_pass(self):
+        pass
 
-        # last 2 layers are a special case where the input connections
-        # need a bias term but the output does not
-        w = np.random.randn(self.layers[-2] + 1, self.layers[-1])
-        self.weights.append(w / np.sqrt(self.layers[-2]))
+    def backprop(self):
+        pass
 
     def update_weights(self, train_row, target):
-        A = [np.atleast_2d(train_row)]
-        for layer in np.arange(0, len(self.weights)):
-            net = A[layer].dot(self.weights[layer])
-            out = sigmoid(net)
-            A.append(out)
+        output = np.dot(self.weights, train_row)
+        delta = target - sigmoid(output)
+        self.weights = self.weights + (self.alpha * delta * train_row * sigmoid_prime(output))
 
-        error = A[-1] - y
-        D = [error * sigmoid]
-
-    def fit(self, train_data, target, epochs=10):
-        # insert a column of 1s to treat bias as trainable parameter
-        train_data = np.c_[train_data, np.ones((train_data.shape[0]))]
-
-        for epoch in np.arange(0, epochs):
-            for row, target in zip(train_data, target):
+    def fit(self):
+        for epoch in np.arange(0, self.epochs):
+            for row, target in zip(self.train_data, self.targets):
                 self.update_weights(row, target)
 
+    def predict(self, test_data):
+        predictions = []
+        for i in range(len(test_data)):
+            output = np.dot(self.weights, test_data[i])
+            activated_output = sigmoid(output)
+            if activated_output >= 0.5:
+                prediction = 1
+            else:
+                prediction = 0
+            predictions.append(prediction)
+        return predictions
+
+    def accuracy(self, predictions):
+        correct = 0
+        for i in range(len(predictions)):
+            if predictions[i] == self.targets[i]:
+                correct += 1
+        return correct/len(predictions)
+
+
+if __name__ == '__main__':
+    nn = LinearPerceptron(dimensions=3, X_train=X, Y_train=Y, epochs=100)
+    nn.fit()
+    preds = nn.predict(X)
+    print(f'Predictions: {preds}')
+    accuracy = nn.accuracy(preds)
+    print(f'Accuracy: {accuracy}')

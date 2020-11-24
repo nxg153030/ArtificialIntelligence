@@ -1,89 +1,68 @@
-"""
-Implementation of the Linear Perceptron Algorithm for Neural Networks
-"""
-import pandas as pd
 import numpy as np
-import sys
-from math import exp
+from common.activation_functions import sigmoid, sigmoid_prime
+
+# XOR dataset for testing
+X = [(0, 0, -1), (0, 1, -1), (1, 0, -1), (1, 1, -1)]
+Y = [0, 1, 1, 1]
 
 
-def main():
-    if len(sys.argv) != 5:
-        print("ERROR! Incorrect number of arguments! Exiting Program . . .")
-        exit()
-    training_file_name = sys.argv[1]
-    test_file_name = sys.argv[2]
-    learning_rate = float(sys.argv[3])
-    num_iterations = int(sys.argv[4])
-    training_file = pd.read_table(training_file_name)
-    test_file = pd.read_table(test_file_name)
-    X_train = training_file.drop('class', axis=1)
-    Y_train = training_file['class']
-    X_test = test_file.drop('class', axis=1)
-    Y_test = test_file['class']
-    weightVec = fit(X_train, Y_train, num_iterations, learning_rate)
-    predicted_Y_train = predict(weightVec, X_train)
-    predicted_Y_test = predict(weightVec, X_test)
-    print('Accuracy on training set (', len(X_train), 'instances): ', accuracy(predicted_Y_train, Y_train), '%')
-    print('Accuracy on test set (', len(X_test), 'instances): ', accuracy(predicted_Y_test, Y_test), '%')
+class LinearPerceptron:
+    def __init__(self, dimensions, X_train, Y_train, layers=None, learning_rate=0.5, epochs=10):
+        """
+        :param dimensions: This should be equal to the number of columns for each training sample
+        :param layers:
+        :param learning_rate:
+        """
+        self.train_data = np.array(X_train)
+        self.targets = np.array(Y_train)
+        self.weights = np.zeros(dimensions)
+        self.layers = layers
+        self.alpha = learning_rate
+        self.epochs = epochs
 
+    def __repr__(self):
+        pass
 
-# classify all training instances return weight vector
-# prints the weight values after each iteration
-# X = training instances
-# Y = output values for each training instance
-# Returns the weight matrix
-def fit(X, Y, numIter, learning_rate):
-    weight_update = [0 for _ in range(len(X.keys()))]
-    i, j = 0, 0
-    while (i < numIter and j < numIter):
-        if (i >= len(X)):
-            i = 0
-        wtDotX = np.dot(weight_update, X.iloc[i])
-        delta = Y.iloc[i] - sigmoid(wtDotX)
-        weight_update = weight_update + learning_rate * delta * (X.iloc[i]) * sigmoid_prime(wtDotX)
-        weight_update = np.round(weight_update, decimals=4)
-        print('After iteration', j + 1, ': ', end='')
-        for k in range(0, len(X.keys())):
-            print('w(', X.keys()[k], ')=', weight_update[k], ',', end='')
-        updatedWtDotX = np.dot(weight_update, X.iloc[i])
-        output = np.round(sigmoid(updatedWtDotX), 4)
-        print('Output = ', output)
-        i += 1
-        j += 1
-    return weight_update
+    def forward_pass(self):
+        pass
 
+    def backprop(self):
+        pass
 
-def sigmoid(X):
-    return 1 / (1 + exp(-X))
+    def update_weights(self, train_row, target):
+        output = np.dot(self.weights, train_row)
+        delta = target - sigmoid(output)
+        self.weights = self.weights + (self.alpha * delta * train_row * sigmoid_prime(output))
 
+    def fit(self):
+        for epoch in np.arange(0, self.epochs):
+            for row, target in zip(self.train_data, self.targets):
+                self.update_weights(row, target)
 
-def sigmoid_prime(X):
-    return sigmoid(X) * (1 - sigmoid(X))
+    def predict(self, test_data):
+        predictions = []
+        for i in range(len(test_data)):
+            output = np.dot(self.weights, test_data[i])
+            activated_output = sigmoid(output)
+            if activated_output >= 0.5:
+                prediction = 1
+            else:
+                prediction = 0
+            predictions.append(prediction)
+        return predictions
 
-
-# return predicted Y values for test set
-def predict(weightVec, test):
-    predicted_Y_test = [None] * len(test)
-    for i in range(0, len(test)):
-        wtDotTest = np.dot(weightVec, test.iloc[i])
-        output = np.round(sigmoid(wtDotTest), 4)
-        if (output >= 0.5):
-            predicted_Y_test[i] = 1
-        else:
-            predicted_Y_test[i] = 0
-    return predicted_Y_test
-
-
-def accuracy(predicted_Y_vec, Yvalues):
-    correct_counter = 0
-    for i in range(0, len(Yvalues)):
-        if (predicted_Y_vec[i] == Yvalues.iloc[i]):
-            correct_counter += 1
-    accuracy = (correct_counter / len(predicted_Y_vec)) * 100
-    accuracy = np.round(accuracy, 1)
-    return accuracy
+    def accuracy(self, predictions):
+        correct = 0
+        for i in range(len(predictions)):
+            if predictions[i] == self.targets[i]:
+                correct += 1
+        return correct/len(predictions)
 
 
 if __name__ == '__main__':
-    main()
+    nn = LinearPerceptron(dimensions=3, X_train=X, Y_train=Y, epochs=100)
+    nn.fit()
+    preds = nn.predict(X)
+    print(f'Predictions: {preds}')
+    accuracy = nn.accuracy(preds)
+    print(f'Accuracy: {accuracy}')

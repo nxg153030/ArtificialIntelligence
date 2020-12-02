@@ -3,8 +3,10 @@ import numpy as np
 import copy
 from common.optimization_functions import rastrigin, sphere
 
-upper_limit = 5.12
-lower_limit = 2.5
+upper_bound = 5.12
+lower_bound = 2.5
+min_weight = 1.0
+max_weight = 1000.0
 global_optimum = 0.0
 step_ind_init = 0.1
 step_ind_final = 0.01
@@ -16,14 +18,12 @@ random.seed(10)
 class Fish:
     def __init__(self, _id, dimensions, fitness_func):
         self.id = _id
-        self.position_vec = np.array([random.uniform(lower_limit, upper_limit) for _ in range(dimensions)])
+        self.position_vec = np.array([random.uniform(lower_bound, upper_bound) for _ in range(dimensions)])
         self.fitness = fitness_func(self.position_vec, dimensions)
         self.delta_fitness = 0.0
         self.displacement = 0.0
-        self.weight = 1.0
-
-    def set_position_vec(self, l: []):
-        self.position_vec = l
+        self.weight = max_weight / 2.0
+        self.fitness_func = fitness_func
 
     def set_weight(self, l: []):
         self.weight = l
@@ -47,11 +47,50 @@ class FishSchoolSearch:
         self.max_delta_fitness = -np.inf
         self.populate_fish_school()
         self.barycenter = np.array([0.0] * self.dimensions)
+        self.interaction_graph = np.zeros((self.num_fish, self.num_fish))
+        self.fish_movement_tracker = [0] * self.num_fish  # each element stores the no. of times a fish has moved throughout the run
 
     def populate_fish_school(self):
         for i in range(self.num_fish):
             self.fish_school[i] = Fish(i, self.dimensions, self.fitness_func)
             self.fish_school_weight += self.fish_school[i].weight
+
+    def individual_movement(self):
+        for idx, fish in enumerate(self.fish_school):
+            new_candidate_pos = copy.deepcopy(fish.position_vec) + (random.uniform(-1, 1) * step_ind)  # eq 1
+            # boundary check
+            # for dim in range(0, len(new_candidate_pos)):
+            #     if new_candidate_pos[dim] > upper_bound:
+            #         new_candidate_pos[dim] = upper_bound
+            #     elif new_candidate_pos[dim] < lower_bound:
+            #         new_candidate_pos[dim] = lower_bound
+            # new_candidate_pos = np.array([round(new_candidate_pos[i], 4) for i in range(self.dimensions)])
+            new_fitness = self.fitness_func(new_candidate_pos, self.dimensions)  # eq 2
+            delta_fitness = new_fitness - fish.fitness
+            if delta_fitness < 0:
+                fish.displacement = new_candidate_pos - copy.deepcopy(fish.position_vec)
+                fish.position_vec = new_candidate_pos
+                fish.fitness = new_fitness
+                self.fish_movement_tracker[idx] += 1
+            else:
+                delta_fitness = 0.0  # if curr_fitness is worse, then don't move
+                fish.displacement = 0.0
+
+            fish.delta_fitness = abs(delta_fitness)
+            self.delta_fitness_all[idx] = fish.delta_fitness
+            # update max_delta_fitness
+            if fish.delta_fitness > self.max_delta_fitness:
+                self.max_delta_fitness = fish.delta_fitness
+
+    def feeding_operator(self):
+        # weight update for all fish
+        for fish in self.fish_school:
+            fish.weight = fish.weight + (fish.delta_fitness / self.max_delta_fitness)
+            # check bounds for weight
+            # if fish.weight > max_weight:
+            #     fish.weight = max_weight / 2.0
+            # elif fish.weight < min_weight:
+            #     fish.weight = min_weight
 
     def set_barycenter(self, fish_weights_sum):
         weighted_positions = np.array([fish.position_vec * fish.weight for fish in self.fish_school])
@@ -68,19 +107,29 @@ class FishSchoolSearch:
             resulting_direction = np.array([0.0] * self.dimensions)
         for fish in self.fish_school:
             fish.position_vec = fish.position_vec + resulting_direction
+            fish.fitness = self.fitness_func(fish.position_vec, self.dimensions)
+            # boundary check
+            # for dim in range(0, self.dimensions):
+            #     if fish.position_vec[dim] > upper_bound:
+            #         fish.position_vec[dim] = upper_bound
+            #     elif fish.position_vec[dim] < lower_bound:
+            #         fish.position_vec[dim] = lower_bound
 
     def volitive_movement(self):
         fish_school_weight_current = sum(fish.weight for fish in self.fish_school)
         self.set_barycenter(fish_school_weight_current)
+        sign = -1.0 if fish_school_weight_current > self.fish_school_weight else 1.0
         for fish in self.fish_school:
-            if fish_school_weight_current > self.fish_school_weight:
-                fish.position_vec = fish.position_vec - (((step_vol * random.uniform(0, 1)) *
-                                                          np.subtract(fish.position_vec, self.barycenter)) /
-                                                         np.linalg.norm(fish.position_vec - self.barycenter))
-            else:
-                fish.position_vec = fish.position_vec + (((step_vol * random.uniform(0, 1)) *
-                                                          np.subtract(fish.position_vec, self.barycenter)) /
-                                                         np.linalg.norm(fish.position_vec - self.barycenter))
+            fish.position_vec = fish.position_vec + (sign * (((step_vol * random.uniform(0, 1)) *
+                                                              np.subtract(fish.position_vec, self.barycenter)) /
+                                                             np.linalg.norm(fish.position_vec - self.barycenter)))
+            fish.fitness = self.fitness_func(fish.position_vec, self.dimensions)
+            # boundary check
+            # for dim in range(0, self.dimensions):
+            #     if fish.position_vec[dim] > upper_bound:
+            #         fish.position_vec[dim] = upper_bound
+            #     elif fish.position_vec[dim] < lower_bound:
+            #         fish.position_vec[dim] = lower_bound
         self.fish_school_weight = fish_school_weight_current
 
     def stopping_condition_met(self, num_iter):
@@ -94,6 +143,8 @@ class FishSchoolSearch:
         for fish in self.fish_school:
             rounded_position_vec = np.array([round(fish.position_vec[i], 4) for i in range(self.dimensions)])
             print(f'Fish ID: {fish.id}, Position: {rounded_position_vec}, Fitness: {round(fish.fitness, 4)}')
+
+        print(f'Fish movement tracker: {self.fish_movement_tracker}')
 
     def run(self):
         """
@@ -117,31 +168,8 @@ class FishSchoolSearch:
         iter_counter = 0
         global step_ind, step_vol, step_ind_final
         while not self.stopping_condition_met(iter_counter):
-            for idx, fish in enumerate(self.fish_school):
-                current_fitness = self.fitness_func(fish.position_vec, self.dimensions)
-                # individual movement
-                new_candidate_pos = copy.deepcopy(fish.position_vec) + (random.uniform(-1, 1) * step_ind)  # eq 1
-                # new_candidate_pos = np.array([round(new_candidate_pos[i], 4) for i in range(self.dimensions)])
-                new_fitness = self.fitness_func(new_candidate_pos, self.dimensions)  # eq 2
-                delta_fitness = new_fitness - current_fitness
-                if delta_fitness < 0:
-                    fish.displacement = new_candidate_pos - copy.deepcopy(fish.position_vec)
-                    fish.position_vec = new_candidate_pos
-                    fish.fitness = new_fitness
-                else:
-                    delta_fitness = 0.0  # if curr_fitness is worse, then don't move
-                    fish.displacement = 0.0
-
-                fish.delta_fitness = abs(delta_fitness)
-                self.delta_fitness_all[idx] = delta_fitness
-                # update max_delta_fitness
-                if fish.delta_fitness > self.max_delta_fitness:
-                    self.max_delta_fitness = fish.delta_fitness
-
-            # weight update for all fish
-            for fish in self.fish_school:
-                fish.weight = fish.weight + (fish.delta_fitness / self.max_delta_fitness)
-
+            self.individual_movement()
+            self.feeding_operator()
             self.instinctive_movement()
             self.volitive_movement()
 

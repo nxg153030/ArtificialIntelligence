@@ -49,6 +49,7 @@ class FishSchoolSearch:
         self.barycenter = np.array([0.0] * self.dimensions)
         self.interaction_graph = np.zeros((self.num_fish, self.num_fish))
         self.fish_movement_tracker = [0] * self.num_fish  # each element stores the no. of times a fish has moved throughout the run
+        # self.interaction_graph = np.zeros()
 
     def populate_fish_school(self):
         for i in range(self.num_fish):
@@ -87,10 +88,10 @@ class FishSchoolSearch:
         for fish in self.fish_school:
             fish.weight = fish.weight + (fish.delta_fitness / self.max_delta_fitness)
             # check bounds for weight
-            # if fish.weight > max_weight:
-            #     fish.weight = max_weight / 2.0
-            # elif fish.weight < min_weight:
-            #     fish.weight = min_weight
+            if fish.weight > max_weight:
+                fish.weight = max_weight / 2.0
+            elif fish.weight < min_weight:
+                fish.weight = min_weight
 
     def set_barycenter(self, fish_weights_sum):
         weighted_positions = np.array([fish.position_vec * fish.weight for fish in self.fish_school])
@@ -186,9 +187,9 @@ class FishSchoolSearch:
 
 def main():
     num_fish = 10
-    dimensions = 2
-    fitness_func = sphere
-    num_iter = 100
+    dimensions = 10
+    fitness_func = rastrigin
+    num_iter = 10000
     fss = FishSchoolSearch(num_fish, dimensions, fitness_func, num_iter)
     fss.run()
 

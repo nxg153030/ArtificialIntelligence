@@ -1,7 +1,7 @@
 import numpy as np
 import random
-from .ant import Ant
-from .graph import ACOGraph
+from ant import Ant
+from graph import ACOGraph
 
 
 class AntColonyOptimization:
@@ -47,7 +47,7 @@ class AntColonyOptimization:
                 visibility = 1 / self.graph.weight_matrix[current_node][i]
                 numerator = (self.graph.pheromone_matrix[current_node][i] ** self.alpha) * (visibility ** self.beta)
                 denominator = 0.0
-                for k in range(self.num_nodes):
+                for k in range(self.graph.num_nodes):
                     if k not in self.ant_colony[ant_idx].tabu_list and k != i:
                         denominator += (self.graph.pheromone_matrix[current_node][k] ** self.alpha) * \
                                        ((1/self.graph.weight_matrix[current_node][k]) ** self.beta)

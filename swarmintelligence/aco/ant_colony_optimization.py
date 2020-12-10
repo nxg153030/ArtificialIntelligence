@@ -80,8 +80,7 @@ class AntColonyOptimization:
         for i in range(self.num_ants):
             self.select_next_node(i)  # choose city to go to, using transition probability
 
-        # drop pheromone on the edges
-
+        # move the ants back to starting city, drop pheromone on the edges
             pass
 
     def update_pheromones(self):

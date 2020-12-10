@@ -7,4 +7,5 @@ class Ant:
         self.current_node = -1
         self.pheromone_matrix = np.zeros((num_nodes, num_nodes))
         self.available_nodes = [i for i in range(num_nodes)]
+        self.tour_length = -1
         self.tabu_list = []  # list of cities already visited

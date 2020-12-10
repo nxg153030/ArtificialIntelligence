@@ -7,4 +7,5 @@ class ACOGraph:
         self.adj_matrix = adj_matrix
         self.weight_matrix = weight_matrix
         self.pheromone_matrix = np.array((self.num_nodes, self.num_nodes))
+        self.delta_pheromone_matrix = np.array((self.num_nodes, self.num_nodes))
 

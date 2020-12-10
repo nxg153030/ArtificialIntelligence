@@ -3,6 +3,8 @@ import random
 from ant import Ant
 from graph import ACOGraph
 
+Q = 1.0
+
 
 class AntColonyOptimization:
     def __init__(self, num_ants, evaporation_rate, num_nodes, adj_matrix, weight_matrix, num_iter):
@@ -76,20 +78,25 @@ class AntColonyOptimization:
 
     def construct_ant_solutions(self):
         for i in range(self.num_ants):
-            # choose city to go to, using transition probability
-            self.select_next_node(i)
+            self.select_next_node(i)  # choose city to go to, using transition probability
+
+        # drop pheromone on the edges
+
             pass
 
     def update_pheromones(self):
-        pass
+        for i in range(self.graph.num_nodes):
+            for j in range(self.graph.num_nodes):
+                self.graph.pheromone_matrix[i][j] = (1 - self.evaporation_rate) * self.graph.pheromone_matrix[i][j] \
+                                                    + self.graph.delta_pheromone[i][j]
 
     def clear_lists(self):
         pass
 
     def run(self):
         num_iter = 0
+        self.init_ant_colony()
         while num_iter != self.num_iter:
-            self.init_ant_colony()
             self.construct_ant_solutions()
             self.update_pheromones()
             self.clear_lists()

@@ -24,7 +24,7 @@ class RunAco:
 def main():
     problem_name = 'Traveling Salesman Problem'
     # Link to dataset: https://people.sc.fsu.edu/~jburkardt/datasets/tsp/tsp.html
-    file_path = 'data/48_cities.txt'
+    file_path = '../../data/48_cities.txt'
     num_ants = 48
     evaporation_rate = 0.25
     num_nodes = 48

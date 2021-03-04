@@ -3,3 +3,4 @@ venv/
 .idea/
 datastructures/__pycache__
 notebooks/.ipynb_checkpoints
+data/

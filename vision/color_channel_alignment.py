@@ -18,12 +18,12 @@ def normalized_cross_correlation(u, v):
     return np.dot(norm_u, norm_v)
 
 
-def get_best_shift(constant_channel, channel_to_be_shifted):
+def get_best_shift(constant_channel, channel_to_be_shifted, axis=0):
     best_shift = temp_ssd = 0
     best_ssd = np.inf
-    for i in range(-30, 31):
+    for i in range(-30, 100):
         temp_shift = i
-        shifted_channel = np.roll(channel_to_be_shifted, temp_shift, 0)
+        shifted_channel = np.roll(channel_to_be_shifted, temp_shift, axis)
         # compute the SSD for each row, and sum it up
         for row in range(len(constant_channel)):
             temp_ssd += sum_of_squared_differences(constant_channel[row], shifted_channel[row])
@@ -38,40 +38,58 @@ def image_aligner(red, blue, green):
     best_ssd_dict = dict()
 
     # blue -> red alignment
-    best_shift_red, best_ssd = get_best_shift(blue, red)
-    best_ssd_dict.update({'blue_red': best_ssd})
+    best_shift_red, best_ssd = get_best_shift(blue, red, axis=0)
+    best_ssd_dict.update({'blue_red': (best_shift_red, best_ssd)})
 
     # blue -> green alignment
-    best_shift_green, best_ssd = get_best_shift(blue, green)
-    best_ssd_dict.update({'blue_green': best_ssd})
+    best_shift_green, best_ssd = get_best_shift(blue, green, axis=0)
+    best_ssd_dict.update({'blue_green': (best_shift_green, best_ssd)})
 
-    blue_aligned_ssd_sum = best_ssd_dict['blue_red'] + best_ssd_dict['blue_green']
+    blue_aligned_ssd_sum = best_ssd_dict['blue_red'][1] + best_ssd_dict['blue_green'][1]
 
     # green -> blue alignment
-    best_shift_blue, best_ssd = get_best_shift(green, blue)
-    best_ssd_dict.update({'green_blue': best_ssd})
-
-    # green -> red alignment
-    best_shift_red, best_ssd = get_best_shift(green, red)
-    best_ssd_dict.update({'green_red': (best_shift_red, best_ssd)})
-
-    green_aligned_ssd_sum = best_ssd_dict['green_blue'] + best_ssd_dict['green_red']
-
-    # red -> blue alignment
-    best_shift_blue, best_ssd = get_best_shift(red, blue)
+    best_shift_blue, best_ssd = get_best_shift(green, blue, axis=0)
     best_ssd_dict.update({'green_blue': (best_shift_blue, best_ssd)})
 
-    # red -> green alignment
-    best_shift_green, best_ssd = get_best_shift(red, green)
-    best_ssd_dict.update({'green_red': (best_shift_green, best_ssd)})
+    # green -> red alignment
+    best_shift_red, best_ssd = get_best_shift(green, red, axis=0)
+    best_ssd_dict.update({'green_red': (best_shift_red, best_ssd)})
 
-    aligned_red = np.roll(red, best_shift_red, 0)
-    aligned_green = np.roll(green, best_shift_green, 0)
-    combined_img = np.dstack((blue, aligned_green, aligned_red))
+    green_aligned_ssd_sum = best_ssd_dict['green_blue'][1] + best_ssd_dict['green_red'][1]
+
+    # red -> blue alignment
+    best_shift_blue, best_ssd = get_best_shift(red, blue, axis=0)
+    best_ssd_dict.update({'red_blue': (best_shift_blue, best_ssd)})
+
+    # red -> green alignment
+    best_shift_green, best_ssd = get_best_shift(red, green, axis=0)
+    best_ssd_dict.update({'red_green': (best_shift_green, best_ssd)})
+
+    red_aligned_ssd_sum = best_ssd_dict['red_blue'][1] + best_ssd_dict['red_green'][1]
+
+    best_alignment_dict = {'blue': blue_aligned_ssd_sum, 'green': green_aligned_ssd_sum, 'red': red_aligned_ssd_sum}
+    best_const_channel = max(best_alignment_dict, key=best_alignment_dict.get)
+    print(f'Best channel to keep constant: {best_const_channel}')
+    if best_const_channel == 'blue':
+        aligned_red = np.roll(red, best_ssd_dict['blue_red'][0], 0)
+        aligned_green = np.roll(green, best_ssd_dict['blue_green'][0], 0)
+        combined_img = np.dstack((blue, aligned_green, aligned_red))
+    elif best_const_channel == 'green':
+        aligned_red = np.roll(red, best_ssd_dict['green_red'][0], 0)
+        aligned_blue = np.roll(blue, best_ssd_dict['green_blue'][0], 0)
+        combined_img = np.dstack((aligned_blue, green, aligned_red))
+    else:
+        aligned_blue = np.roll(blue, best_ssd_dict['red_blue'][0], 0)
+        aligned_green = np.roll(green, best_ssd_dict['red_green'][0], 0)
+        combined_img = np.dstack((aligned_blue, aligned_green, red))
+
+    # aligned_red = np.roll(red, best_shift_red, 0)
+    # aligned_green = np.roll(green, best_shift_green, 0)
+    # combined_img = np.dstack((blue, aligned_green, aligned_red))
 
     # cv2.imshow('image', combined_img)
     # cv2.waitKey()
-    cv2.imwrite('../data/img_aligned_blue.png', combined_img)
+    cv2.imwrite(f'../data/img_aligned_{best_const_channel}_axis_1.png', combined_img)
 
 
 if __name__ == '__main__':

@@ -4,11 +4,9 @@ import random
 from ant import Ant
 from graph import ACOGraph
 
-Q = 1.0
-
 
 class AntColonyOptimization:
-    def __init__(self, num_ants, evaporation_rate, Q, num_nodes, adj_matrix, weight_matrix, num_iter):
+    def __init__(self, num_ants, evaporation_rate, alpha, beta, Q, num_nodes, adj_matrix, weight_matrix, num_iter):
         """
         Link to paper: http://users.dimi.uniud.it/~antonio.dangelo/Robotica/2018/helper/10.1.1.26.1865.pdf
         """
@@ -16,8 +14,8 @@ class AntColonyOptimization:
         self.num_iter = num_iter
         self.evaporation_rate = evaporation_rate
         self.Q = Q
-        self.alpha = 0.0  # relative importance of the trail
-        self.beta = 0.0  # relative importance of visibility
+        self.alpha = alpha  # relative importance of the trail
+        self.beta = beta  # relative importance of visibility
         self.init_trail_value = 0.0
         self.ant_colony = [Ant(i, num_nodes) for i in range(self.num_ants)]
         self.graph = ACOGraph(num_nodes, adj_matrix, weight_matrix)
@@ -123,11 +121,13 @@ class AntColonyOptimization:
 
     def clear_lists(self):
         for i in range(self.num_ants):
+            self.ant_colony[i].tour_length = 0
             self.ant_colony[i].pheromone_matrix.fill(0.0)
             self.ant_colony[i].tabu_list.clear()
             self.ant_colony[i].adjacency_matrix.fill(0)
             self.ant_colony[i].available_nodes = copy.deepcopy(self.graph.node_list)
             self.ant_colony[i].tabu_list.append(i)  # all ants start at the same city, can add randomization
+            self.ant_colony[i].current_node = i
             self.ant_colony[i].available_nodes.remove(self.ant_colony[i].tabu_list[-1])
 
     def run(self):
@@ -137,6 +137,8 @@ class AntColonyOptimization:
             self.construct_ant_solutions()
             self.update_pheromones()
             self.clear_lists()
+            print(f'Shortest path after iteration {num_iter+1}: {self.shortest_path}')
+            print(f'Shortest path length after first iteration {num_iter+1}: {self.shortest_path_length}')
             num_iter += 1
         print(f'Shortest path: {self.shortest_path}')
         print(f'Shortest path length: {self.shortest_path_length}')

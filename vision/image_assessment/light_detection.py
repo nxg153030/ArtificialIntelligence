@@ -43,11 +43,12 @@ class LightDetection:
         plt.show()
 
     def preprocess(self):
+        bins = np.linspace(0, 256, 8)
         for img in self.train_dir:
             hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-            hue_histogram = np.histogram(hsv[:, :, 0], bins=8)
-            sat_histogram = np.histogram(hsv[:, :, 1], bins=8)
-            val_histogram = np.histogram(hsv[:, :, 2], bins=8)
+            hue_histogram = np.histogram(hsv[:, :, 0], bins)
+            sat_histogram = np.histogram(hsv[:, :, 1], bins)
+            val_histogram = np.histogram(hsv[:, :, 2], bins)
             combined_histograms = np.concatenate((hue_histogram, sat_histogram, val_histogram))
             self.preprocessed_imgs.append(combined_histograms)
 

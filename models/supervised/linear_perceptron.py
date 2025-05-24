@@ -7,7 +7,7 @@ Y = [0, 1, 1, 1]
 
 
 class LinearPerceptron:
-    def __init__(self, dimensions, x_train, y_train, layers=None, learning_rate=0.5, epochs=10):
+    def __init__(self, dimensions, x_train, y_train, learning_rate=0.5, epochs=10):
         """
         :param dimensions: This should be equal to the number of columns for each training sample
         :param layers:
@@ -16,18 +16,8 @@ class LinearPerceptron:
         self.train_data = np.array(x_train)
         self.targets = np.array(y_train)
         self.weights = np.zeros(dimensions)
-        self.layers = layers
         self.alpha = learning_rate
         self.epochs = epochs
-
-    def __repr__(self):
-        pass
-
-    def forward_pass(self):
-        pass
-
-    def backprop(self):
-        pass
 
     def update_weights(self, train_row, target):
         output = np.dot(self.weights, train_row)

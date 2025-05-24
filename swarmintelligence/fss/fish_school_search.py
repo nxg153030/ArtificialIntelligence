@@ -187,9 +187,9 @@ class FishSchoolSearch:
 
 def main():
     num_fish = 10
-    dimensions = 10
+    dimensions = 2
     fitness_func = rastrigin
-    num_iter = 10000
+    num_iter = 100
     fss = FishSchoolSearch(num_fish, dimensions, fitness_func, num_iter)
     fss.run()
 

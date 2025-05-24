@@ -2,10 +2,11 @@ from swarmintelligence.fss import FishSchoolSearch
 
 
 class NeuralNetFss:
-    def __init__(self, layers, learning_rate):
+    def __init__(self, layers, learning_rate, error_func):
         self.layers = layers
         self.weights = []
         self.alpha = learning_rate
+        self.fitness_func = error_func
 
     def update_weights(self):
         """

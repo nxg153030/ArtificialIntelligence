@@ -1,9 +1,10 @@
 import numpy as np
 
 
-def sigmoid(x):
+def sigmoid(x: np.ndarray) -> np.ndarray:
     return 1.0 / (1 + np.exp(-x))
 
 
-def sigmoid_prime(x):
-    return sigmoid(x) * (1 - sigmoid(x))
+def sigmoid_prime(x: np.ndarray) -> np.ndarray:
+    sig = sigmoid(x)
+    return sig * (1 - sig)

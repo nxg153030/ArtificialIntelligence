@@ -7,4 +7,4 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
 
 def sigmoid_prime(x: np.ndarray) -> np.ndarray:
     sig = sigmoid(x)
-    return sig * (1 - sig)
+    return np.multiply(sig, 1 - sig, out=sig) # in-place multiplication
